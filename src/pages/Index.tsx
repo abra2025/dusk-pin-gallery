@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 const Index = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [images, setImages] = useState<Image[]>(sampleImages);
+  const [images, setImages] = useState<Image[]>([]); // Start with empty array instead of sample images
 
   const handleUploadImage = (data: {
     title: string;
@@ -43,11 +43,6 @@ const Index = () => {
       <Header onUploadClick={() => setIsUploadModalOpen(true)} />
       
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h2 className="text-xl font-medium">Explora diseños arquitectónicos</h2>
-          <p className="text-neutral-400 text-sm">Descubre las últimas tendencias en arquitectura</p>
-        </div>
-        
         <MasonryGrid images={images} />
       </main>
       
