@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="hidden md:flex flex-1 max-w-xl mx-6">
-          <Input type="search" placeholder="Buscar imágenes de arquitectura..." className="border-neutral-800 text-sm placeholder:text-neutral-200 bg-neutral-800 rounded-xl py-0 px-[15px]" />
+          <Input type="search" placeholder="Buscar imágenes de arquitectura..." className="border-neutral-800 text-sm placeholder:text-neutral-50 bg-neutral-800 rounded-xl py-0 px-[15px]" />
         </div>
         
         <div className="flex items-center gap-3">
