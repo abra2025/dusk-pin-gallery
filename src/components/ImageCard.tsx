@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Image } from '../types';
 import { cn } from '@/lib/utils';
@@ -28,11 +29,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image }) => {
     }
   };
 
-  // Calculate natural aspect ratio based on image dimensions
-  // This is crucial for masonry layout to work properly
-  const aspectRatio = image.width && image.height 
-    ? `${image.width / image.height}`
-    : '1';
+  const aspectRatio = image.height ? `${Math.min(image.height / 100, 1.8)}` : '1';
 
   return (
     <div 
@@ -46,7 +43,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image }) => {
     >
       <div className="w-full h-full">
         <img 
-          src={image.src || image.url} // Handle both src and url properties
+          src={image.src} 
           alt={image.title}
           className={cn(
             "w-full h-full object-cover transition-opacity duration-300",
