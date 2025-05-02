@@ -4,7 +4,6 @@ import Header from '@/components/Header';
 import MasonryGrid from '@/components/MasonryGrid';
 import UploadModal from '@/components/UploadModal';
 import { Image, Category } from '@/types';
-import { sampleImages } from '@/data/sampleImages';
 import { v4 as uuid } from 'uuid';
 import { toast } from 'sonner';
 
@@ -23,6 +22,13 @@ const Index = () => {
       // Por ahora, usaremos URL.createObjectURL para simular
       const imageUrl = URL.createObjectURL(data.imageFile);
       
+      // Generate more varied heights for a better masonry effect
+      const randomHeight = () => {
+        const baseHeight = 200;
+        const variationFactor = Math.floor(Math.random() * 4) + 1; // 1-4
+        return baseHeight * variationFactor;
+      };
+      
       const newImage: Image = {
         id: uuid(),
         src: imageUrl,
@@ -30,7 +36,7 @@ const Index = () => {
         description: data.description,
         categories: data.categories,
         saved: false,
-        height: 250 * (Math.floor(Math.random() * 3) + 1), // Altura aleatoria para variedad en el grid
+        height: randomHeight(),
       };
       
       setImages([newImage, ...images]);

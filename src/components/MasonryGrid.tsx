@@ -40,13 +40,26 @@ const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
       return;
     }
 
-    // Distribute images into columns to create masonry effect
+    // Distribute images into columns using a better algorithm
+    // that balances column heights for true masonry layout
     const newColumns: Image[][] = Array.from({ length: columnCount }, () => []);
+    const columnHeights = Array(columnCount).fill(0);
     
-    images.forEach((image, index) => {
-      // Find the column with the least height
-      const columnIndex = index % columnCount;
-      newColumns[columnIndex].push(image);
+    // Clone images to avoid modifying the original array
+    const sortedImages = [...images];
+    
+    // Sort images by height for better distribution (tallest first)
+    sortedImages.sort((a, b) => (b.height || 0) - (a.height || 0));
+    
+    sortedImages.forEach((image) => {
+      // Find the shortest column
+      const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+      
+      // Add image to the shortest column
+      newColumns[shortestColumnIndex].push(image);
+      
+      // Update the column height
+      columnHeights[shortestColumnIndex] += image.height || 250;
     });
 
     setColumns(newColumns);
@@ -57,11 +70,11 @@ const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+    <div className="masonry-container">
       {columns.map((column, columnIndex) => (
-        <div key={columnIndex} className="flex flex-col gap-3 md:gap-4">
+        <div key={columnIndex} className="masonry-column">
           {column.map((image) => (
-            <div key={image.id} className="w-full">
+            <div key={image.id} className="masonry-item">
               <ImageCard image={image} />
             </div>
           ))}
