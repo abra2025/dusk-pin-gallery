@@ -9,7 +9,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
   onUploadClick
 }) => {
-  return <header className="sticky top-0 z-10 bg-neutral-900/95 backdrop-blur-sm px-4 py-3 border-b border-neutral-800">
+  return <header className="sticky top-0 z-10 bg-neutral-900/95 backdrop-blur-sm px-4 py-3 border-b border-neutral-900">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex-shrink-0">
           <h1 className="text-xl sm:text-2xl font-semibold text-white">Arco</h1>
