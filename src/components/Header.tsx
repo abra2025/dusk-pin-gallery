@@ -20,7 +20,7 @@ const Header: React.FC<HeaderProps> = ({
         </div>
         
         <div className="flex items-center gap-3">
-          <Button onClick={onUploadClick} variant="outline" size="sm" className="border-neutral-700 bg-stone-50 text-neutral-900 rounded-xl px-[20px] my-0 mx-0 py-0 font-normal text-sm">
+          <Button onClick={onUploadClick} variant="outline" size="sm" className="border-neutral-600 bg-neutral-600 text-neutral-50 rounded-xl px-[20px] my-0 mx-0 text-sm py-0 font-normal">
             <Upload size={18} className="mr-2" />
             <span className="hidden sm:inline">Subir</span>
           </Button>
