@@ -24,9 +24,8 @@ const Index = () => {
       
       // Generate more varied heights for a better masonry effect
       const randomHeight = () => {
-        const baseHeight = 200;
-        const variationFactor = Math.floor(Math.random() * 4) + 1; // 1-4
-        return baseHeight * variationFactor;
+        // Create more varied heights between 200 and 800px
+        return Math.floor(Math.random() * 600) + 200;
       };
       
       const newImage: Image = {

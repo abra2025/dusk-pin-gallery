@@ -40,8 +40,7 @@ const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
       return;
     }
 
-    // Distribute images into columns using a better algorithm
-    // that balances column heights for true masonry layout
+    // Initialize empty columns
     const newColumns: Image[][] = Array.from({ length: columnCount }, () => []);
     const columnHeights = Array(columnCount).fill(0);
     
@@ -70,7 +69,7 @@ const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
   }
 
   return (
-    <div className="masonry-container">
+    <div className="masonry-grid">
       {columns.map((column, columnIndex) => (
         <div key={columnIndex} className="masonry-column">
           {column.map((image) => (

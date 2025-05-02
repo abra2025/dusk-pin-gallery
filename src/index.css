@@ -75,50 +75,24 @@
 }
 
 /* Masonry Grid Styles */
-.masonry-container {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+.masonry-grid {
+  display: flex;
   width: 100%;
-  margin: 0 auto;
-}
-
-@media (min-width: 640px) {
-  .masonry-container {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 768px) {
-  .masonry-container {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .masonry-container {
-    grid-template-columns: repeat(5, 1fr);
-  }
+  gap: 16px;
 }
 
 .masonry-column {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-@media (min-width: 768px) {
-  .masonry-column {
-    gap: 16px;
-  }
+  flex: 1;
+  gap: 16px;
 }
 
 .masonry-item {
   width: 100%;
-  transform: translateY(0);
-  transition: transform 0.3s ease;
+  display: block;
   break-inside: avoid;
+  transition: transform 0.3s ease;
 }
 
 .masonry-item:hover {
