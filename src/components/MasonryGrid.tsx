@@ -1,5 +1,4 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Image } from '../types';
 import ImageCard from './ImageCard';
 
@@ -10,7 +9,9 @@ interface MasonryGridProps {
 const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
   const [columns, setColumns] = useState<Image[][]>([]);
   const [columnCount, setColumnCount] = useState(4);
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // Determine number of columns based on screen width
   useEffect(() => {
     const calculateColumns = () => {
       const width = window.innerWidth;
@@ -34,31 +35,30 @@ const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
     return () => window.removeEventListener('resize', updateColumnCount);
   }, []);
 
+  // Distribute images across columns using a greedy algorithm
+  // This places each image in the column with the smallest current height
   useEffect(() => {
     if (images.length === 0) {
       setColumns([]);
       return;
     }
 
-    // Initialize empty columns
+    // Initialize columns with empty arrays
     const newColumns: Image[][] = Array.from({ length: columnCount }, () => []);
+    
+    // Initialize column heights
     const columnHeights = Array(columnCount).fill(0);
-    
-    // Clone images to avoid modifying the original array
-    const sortedImages = [...images];
-    
-    // Sort images by height for better distribution (tallest first)
-    sortedImages.sort((a, b) => (b.height || 0) - (a.height || 0));
-    
-    sortedImages.forEach((image) => {
-      // Find the shortest column
-      const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
-      
-      // Add image to the shortest column
-      newColumns[shortestColumnIndex].push(image);
-      
-      // Update the column height
-      columnHeights[shortestColumnIndex] += image.height || 250;
+
+    // Distribute images
+    images.forEach((image) => {
+      // Find column with minimum height
+      const minHeightIndex = columnHeights.indexOf(Math.min(...columnHeights));
+
+      // Add image to that column
+      newColumns[minHeightIndex].push(image);
+
+      // Update column height - use a default height if not specified
+      columnHeights[minHeightIndex] += image.height || 250;
     });
 
     setColumns(newColumns);
@@ -69,9 +69,9 @@ const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
   }
 
   return (
-    <div className="masonry-grid">
+    <div ref={containerRef} className="flex gap-4">
       {columns.map((column, columnIndex) => (
-        <div key={columnIndex} className="masonry-column">
+        <div key={`column-${columnIndex}`} className="flex flex-col gap-4 flex-1">
           {column.map((image) => (
             <div key={image.id} className="masonry-item">
               <ImageCard image={image} />
