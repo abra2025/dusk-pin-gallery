@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({
           </Button>
           
           <Avatar className="h-9 w-9 border border-neutral-700">
-            <AvatarImage src="https://github.com/shadcn.png" />
+            <AvatarImage src="/lovable-uploads/4215eb53-3395-4473-ac35-186e3aa56fbe.png" className="object-fill" />
             <AvatarFallback className="bg-neutral-800 text-neutral-300">US</AvatarFallback>
           </Avatar>
         </div>
