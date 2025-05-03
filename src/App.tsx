@@ -9,6 +9,7 @@ import { useAuth } from "./context/AuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { LoginScreen } from "./components/Login";
+import ImageDetail from "./pages/ImageDetail";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,11 @@ const AppRoutes = () => {
       <Route path="/" element={
         <ProtectedRoute>
           <Index />
+        </ProtectedRoute>
+      } />
+      <Route path="/image/:id" element={
+        <ProtectedRoute>
+          <ImageDetail />
         </ProtectedRoute>
       } />
       <Route path="*" element={<NotFound />} />

@@ -7,11 +7,16 @@ import { useWindowSize } from '@/hooks/use-window-size';
 
 interface MasonryGridProps {
   images: Image[];
+  loading?: boolean;
+  onImageClick?: (imageId: string) => void;
 }
 
-const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
+const MasonryGrid: React.FC<MasonryGridProps> = ({ 
+  images, 
+  loading = false,
+  onImageClick 
+}) => {
   const [imageColumns, setImageColumns] = useState<Image[][]>([]);
-  const [loading, setLoading] = useState(false);
   const { width } = useWindowSize();
 
   // Determine number of columns based on screen width
@@ -60,36 +65,43 @@ const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
     setImageColumns(columns);
   }, [images, width]); // Re-distribute when images change or screen size changes
 
-  if (images.length === 0) {
-    return null; // Don't render anything if there are no images
+  if (loading) {
+    // Skeleton loading state
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <div key={`skeleton-${index}`} className="w-full">
+            <Skeleton className="w-full h-[300px] rounded-lg" />
+            <div className="mt-2">
+              <Skeleton className="h-4 w-3/4 mb-1" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (images.length === 0 && !loading) {
+    return (
+      <div className="text-center py-20">
+        <p className="text-neutral-400">No hay imágenes para mostrar</p>
+      </div>
+    );
   }
 
   return (
-    <div className="w-full">
-      {loading ? (
-        // Skeleton loading state
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div key={`skeleton-${index}`} className="w-full">
-              <Skeleton className="w-full h-[300px] rounded-lg" />
-              <div className="mt-2">
-                <Skeleton className="h-4 w-3/4 mb-1" />
-              </div>
-            </div>
+    <div className="flex gap-4">
+      {imageColumns.map((column, columnIndex) => (
+        <div key={`column-${columnIndex}`} className="flex flex-col gap-4 flex-1">
+          {column.map((image) => (
+            <ImageCard 
+              key={image.id} 
+              image={image} 
+              onClick={onImageClick ? () => onImageClick(image.id) : undefined}
+            />
           ))}
         </div>
-      ) : (
-        // Masonry grid layout
-        <div className="flex gap-4">
-          {imageColumns.map((column, columnIndex) => (
-            <div key={`column-${columnIndex}`} className="flex flex-col gap-4 flex-1">
-              {column.map((image) => (
-                <ImageCard key={image.id} image={image} />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
+      ))}
     </div>
   );
 };

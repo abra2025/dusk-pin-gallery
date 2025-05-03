@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -10,6 +9,8 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { Category } from '../types';
 import { toast } from 'sonner';
+import { uploadImageToStorage } from '@/services/supabaseStorage';
+import { useAuth } from '@/context/AuthContext';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -18,7 +19,8 @@ interface UploadModalProps {
     title: string;
     description: string;
     categories: Category[];
-    imageFile: File | null;
+    imageUrl: string;
+    userId: string;
   }) => void;
 }
 
@@ -40,6 +42,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const { currentUser } = useAuth();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -89,7 +93,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!title.trim()) {
       toast.error('El título es obligatorio');
       return;
@@ -100,21 +104,46 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
       return;
     }
 
-    onUpload({
-      title,
-      description,
-      categories: selectedCategories,
-      imageFile,
-    });
+    if (!currentUser) {
+      toast.error('Debes iniciar sesión para subir imágenes');
+      return;
+    }
 
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setSelectedCategories([]);
-    setImageFile(null);
-    setPreviewUrl(null);
-    
-    onClose();
+    setIsUploading(true);
+
+    try {
+      // Upload image to Supabase Storage
+      const imageUrl = await uploadImageToStorage(imageFile, currentUser.uid);
+      
+      if (!imageUrl) {
+        toast.error('Error al subir la imagen');
+        setIsUploading(false);
+        return;
+      }
+
+      // Pass the imageUrl to the parent component
+      onUpload({
+        title,
+        description,
+        categories: selectedCategories,
+        imageUrl,
+        userId: currentUser.uid,
+      });
+
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setSelectedCategories([]);
+      setImageFile(null);
+      setPreviewUrl(null);
+      
+      onClose();
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Error al subir la imagen');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -231,6 +260,7 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
             variant="outline"
             onClick={onClose}
             className="bg-transparent border-neutral-600 text-neutral-300 hover:bg-neutral-700"
+            disabled={isUploading}
           >
             Cancelar
           </Button>
@@ -238,8 +268,9 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
             type="submit"
             className="bg-white text-black hover:bg-neutral-200"
             onClick={handleSubmit}
+            disabled={isUploading}
           >
-            Subir
+            {isUploading ? 'Subiendo...' : 'Subir'}
           </Button>
         </DialogFooter>
       </DialogContent>

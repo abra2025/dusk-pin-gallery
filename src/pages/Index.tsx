@@ -1,46 +1,76 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import MasonryGrid from '@/components/MasonryGrid';
 import UploadModal from '@/components/UploadModal';
 import { Image, Category } from '@/types';
-import { v4 as uuid } from 'uuid';
 import { toast } from 'sonner';
+import { useAuth } from '@/context/AuthContext';
+import { getAllImages } from '@/services/imageService';
+import { saveImage } from '@/services/imageService';
 
 const Index = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [images, setImages] = useState<Image[]>([]); // Start with empty array instead of sample images
+  const [images, setImages] = useState<Image[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { currentUser } = useAuth();
+  const navigate = useNavigate();
 
-  const handleUploadImage = (data: {
+  useEffect(() => {
+    const fetchImages = async () => {
+      setLoading(true);
+      try {
+        const fetchedImages = await getAllImages();
+        setImages(fetchedImages);
+      } catch (error) {
+        console.error('Error fetching images:', error);
+        toast.error('Error al cargar las imágenes');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchImages();
+  }, []);
+
+  const handleUploadImage = async (data: {
     title: string;
     description: string;
     categories: Category[];
-    imageFile: File | null;
+    imageUrl: string;
+    userId: string;
   }) => {
-    if (data.imageFile) {
-      // En una app real, aquí subiríamos la imagen a un servidor
-      // Por ahora, usaremos URL.createObjectURL para simular
-      const imageUrl = URL.createObjectURL(data.imageFile);
-      
+    if (!currentUser) {
+      toast.error('Debes iniciar sesión para subir imágenes');
+      return;
+    }
+    
+    try {
       // Generate more varied heights for a better masonry effect
-      const randomHeight = () => {
-        // Create more varied heights between 200 and 800px
-        return Math.floor(Math.random() * 600) + 200;
-      };
+      const randomHeight = () => Math.floor(Math.random() * 600) + 200;
       
-      const newImage: Image = {
-        id: uuid(),
-        src: imageUrl,
+      const newImage = await saveImage({
         title: data.title,
         description: data.description,
         categories: data.categories,
-        saved: false,
+        imageUrl: data.imageUrl,
+        userId: data.userId,
         height: randomHeight(),
-      };
+      });
       
-      setImages([newImage, ...images]);
-      toast.success('Imagen subida correctamente');
+      if (newImage) {
+        setImages([newImage, ...images]);
+        toast.success('Imagen subida correctamente');
+      }
+    } catch (error) {
+      console.error('Error saving image:', error);
+      toast.error('Error al guardar la imagen');
     }
+  };
+
+  const handleImageClick = (imageId: string) => {
+    navigate(`/image/${imageId}`);
   };
 
   return (
@@ -48,7 +78,11 @@ const Index = () => {
       <Header onUploadClick={() => setIsUploadModalOpen(true)} />
       
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <MasonryGrid images={images} />
+        <MasonryGrid 
+          images={images} 
+          loading={loading} 
+          onImageClick={handleImageClick}
+        />
       </main>
       
       <UploadModal 

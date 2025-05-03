@@ -7,9 +7,10 @@ import { toast } from 'sonner';
 
 interface ImageCardProps {
   image: Image;
+  onClick?: () => void;
 }
 
-const ImageCard: React.FC<ImageCardProps> = ({ image }) => {
+const ImageCard: React.FC<ImageCardProps> = ({ image, onClick }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isSaved, setIsSaved] = useState(image.saved || false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -37,6 +38,7 @@ const ImageCard: React.FC<ImageCardProps> = ({ image }) => {
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={onClick}
     >
       <div className="w-full">
         <img 
