@@ -2,83 +2,94 @@
 import React, { useEffect, useState } from 'react';
 import { Image } from '../types';
 import ImageCard from './ImageCard';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useWindowSize } from '@/hooks/use-window-size';
 
 interface MasonryGridProps {
   images: Image[];
 }
 
 const MasonryGrid: React.FC<MasonryGridProps> = ({ images }) => {
-  const [columns, setColumns] = useState<Image[][]>([]);
-  const [columnCount, setColumnCount] = useState(4);
+  const [imageColumns, setImageColumns] = useState<Image[][]>([]);
+  const [loading, setLoading] = useState(false);
+  const { width } = useWindowSize();
 
-  useEffect(() => {
-    const calculateColumns = () => {
-      const width = window.innerWidth;
-      if (width < 640) return 2; // sm
-      if (width < 768) return 3; // md
-      if (width < 1024) return 4; // lg
-      return 5; // xl+
-    };
+  // Determine number of columns based on screen width
+  const getColumnCount = () => {
+    if (width < 640) return 2; // sm
+    if (width < 768) return 3; // md
+    if (width < 1024) return 4; // lg
+    return 5; // xl and above
+  };
 
-    const updateColumnCount = () => {
-      setColumnCount(calculateColumns());
-    };
-
-    // Set initial column count
-    updateColumnCount();
-
-    // Add event listener for window resize
-    window.addEventListener('resize', updateColumnCount);
-
-    // Clean up
-    return () => window.removeEventListener('resize', updateColumnCount);
-  }, []);
-
-  useEffect(() => {
-    if (images.length === 0) {
-      setColumns([]);
-      return;
-    }
-
-    // Initialize empty columns
-    const newColumns: Image[][] = Array.from({ length: columnCount }, () => []);
+  // Distribute images across columns using a greedy algorithm
+  // This places each image in the column with the smallest current height
+  const distributeImages = (images: Image[], columnCount: number) => {
+    if (images.length === 0) return [];
+    
+    // Initialize columns with empty arrays
+    const columns: Image[][] = Array.from({ length: columnCount }, () => []);
+    
+    // Initialize column heights
     const columnHeights = Array(columnCount).fill(0);
     
-    // Clone images to avoid modifying the original array
-    const sortedImages = [...images];
+    // Clone and ensure all images have a height property
+    const processedImages = [...images].map(img => ({
+      ...img,
+      height: img.height || 300, // Default height if not specified
+    }));
     
-    // Sort images by height for better distribution (tallest first)
-    sortedImages.sort((a, b) => (b.height || 0) - (a.height || 0));
-    
-    sortedImages.forEach((image) => {
-      // Find the shortest column
-      const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+    // Distribute images
+    processedImages.forEach((image) => {
+      // Find column with minimum height
+      const minHeightIndex = columnHeights.indexOf(Math.min(...columnHeights));
       
-      // Add image to the shortest column
-      newColumns[shortestColumnIndex].push(image);
+      // Add image to that column
+      columns[minHeightIndex].push(image);
       
-      // Update the column height
-      columnHeights[shortestColumnIndex] += image.height || 250;
+      // Update column height
+      columnHeights[minHeightIndex] += image.height;
     });
+    
+    return columns;
+  };
 
-    setColumns(newColumns);
-  }, [images, columnCount]);
+  useEffect(() => {
+    const columnCount = getColumnCount();
+    const columns = distributeImages(images, columnCount);
+    setImageColumns(columns);
+  }, [images, width]); // Re-distribute when images change or screen size changes
 
   if (images.length === 0) {
     return null; // Don't render anything if there are no images
   }
 
   return (
-    <div className="masonry-grid">
-      {columns.map((column, columnIndex) => (
-        <div key={columnIndex} className="masonry-column">
-          {column.map((image) => (
-            <div key={image.id} className="masonry-item">
-              <ImageCard image={image} />
+    <div className="w-full">
+      {loading ? (
+        // Skeleton loading state
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div key={`skeleton-${index}`} className="w-full">
+              <Skeleton className="w-full h-[300px] rounded-lg" />
+              <div className="mt-2">
+                <Skeleton className="h-4 w-3/4 mb-1" />
+              </div>
             </div>
           ))}
         </div>
-      ))}
+      ) : (
+        // Masonry grid layout
+        <div className="flex gap-4">
+          {imageColumns.map((column, columnIndex) => (
+            <div key={`column-${columnIndex}`} className="flex flex-col gap-4 flex-1">
+              {column.map((image) => (
+                <ImageCard key={image.id} image={image} />
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

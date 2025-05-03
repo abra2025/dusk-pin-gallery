@@ -29,24 +29,21 @@ const ImageCard: React.FC<ImageCardProps> = ({ image }) => {
     }
   };
 
-  const aspectRatio = image.height ? `${Math.min(image.height / 100, 1.8)}` : '1';
-
   return (
     <div 
       className={cn(
-        "rounded-lg overflow-hidden relative cursor-pointer transition-all duration-300",
+        "rounded-lg overflow-hidden relative cursor-pointer transition-all duration-300 masonry-item",
         { "shadow-lg": isHovered }
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{ aspectRatio }}
     >
-      <div className="w-full h-full">
+      <div className="w-full">
         <img 
           src={image.src} 
           alt={image.title}
           className={cn(
-            "w-full h-full object-cover transition-opacity duration-300",
+            "w-full object-cover transition-opacity duration-300",
             { "opacity-0": !isLoaded, "opacity-100": isLoaded }
           )}
           onLoad={() => setIsLoaded(true)}
