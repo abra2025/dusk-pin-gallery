@@ -1,15 +1,38 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useAuth } from '@/context/AuthContext';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Mail, Lock, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const formSchema = z.object({
+  email: z.string().email('Por favor introduce un email válido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+});
+
 export function LoginScreen() {
   const {
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     currentUser,
     loading
   } = useAuth();
   const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(true);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
   // If user is already logged in, redirect to main page
   React.useEffect(() => {
@@ -24,7 +47,22 @@ export function LoginScreen() {
         <p>Cargando...</p>
       </div>;
   }
-  return <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (isLogin) {
+      await signInWithEmail(values.email, values.password);
+    } else {
+      await signUpWithEmail(values.email, values.password);
+    }
+  };
+
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
+    form.reset();
+  };
+
+  return (
+    <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow">
         <div className="text-center">
           <div className="flex justify-center">
@@ -35,7 +73,76 @@ export function LoginScreen() {
         </div>
         
         <div className="mt-8">
-          <Button onClick={signInWithGoogle} className="w-full flex items-center justify-center py-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center border rounded-md focus-within:ring-1 focus-within:ring-gray-400">
+                        <Mail className="ml-2 h-5 w-5 text-gray-500" />
+                        <Input 
+                          placeholder="correo@ejemplo.com" 
+                          className="border-0 focus-visible:ring-0"
+                          {...field} 
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña</FormLabel>
+                    <FormControl>
+                      <div className="flex items-center border rounded-md focus-within:ring-1 focus-within:ring-gray-400">
+                        <Lock className="ml-2 h-5 w-5 text-gray-500" />
+                        <Input 
+                          type="password" 
+                          placeholder="******" 
+                          className="border-0 focus-visible:ring-0"
+                          {...field} 
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <Button type="submit" className="w-full flex items-center justify-center py-6" variant="default">
+                <LogIn className="mr-2 h-5 w-5" />
+                {isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
+              </Button>
+            </form>
+          </Form>
+          
+          <div className="mt-4 text-center">
+            <button 
+              onClick={toggleAuthMode} 
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
+            </button>
+          </div>
+          
+          <div className="mt-6 relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">O continúa con</span>
+            </div>
+          </div>
+          
+          <Button onClick={signInWithGoogle} className="w-full flex items-center justify-center py-6 mt-4" variant="outline">
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
               <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -47,5 +154,6 @@ export function LoginScreen() {
           </Button>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }

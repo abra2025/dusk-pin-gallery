@@ -1,7 +1,14 @@
 
 // src/context/AuthContext.tsx
 import React, { createContext, useContext, ReactNode, useState, useEffect } from "react";
-import { signInWithPopup, onAuthStateChanged, signOut, User } from "firebase/auth";
+import { 
+  signInWithPopup, 
+  onAuthStateChanged, 
+  signOut, 
+  User, 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword 
+} from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { toast } from "sonner";
 
@@ -9,6 +16,8 @@ interface AuthContextType {
   currentUser: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
 }
 
@@ -37,6 +46,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      toast.success("¡Inicio de sesión exitoso!");
+    } catch (error) {
+      console.error("Error al iniciar sesión con email:", error);
+      toast.error("Error al iniciar sesión. Inténtalo de nuevo.");
+    }
+  };
+
+  const signUpWithEmail = async (email: string, password: string) => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      toast.success("¡Cuenta creada exitosamente!");
+    } catch (error) {
+      console.error("Error al crear cuenta:", error);
+      toast.error("Error al crear cuenta. Inténtalo de nuevo.");
+    }
+  };
+
   const logOut = async () => {
     try {
       await signOut(auth);
@@ -48,7 +77,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, loading, signInWithGoogle, logOut }}>
+    <AuthContext.Provider value={{ 
+      currentUser, 
+      loading, 
+      signInWithGoogle, 
+      signInWithEmail,
+      signUpWithEmail,
+      logOut 
+    }}>
       {children}
     </AuthContext.Provider>
   );
