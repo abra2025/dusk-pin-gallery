@@ -3,9 +3,27 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export function LoginScreen() {
-  const { signInWithGoogle } = useAuth();
+  const { signInWithGoogle, currentUser, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // If user is already logged in, redirect to main page
+  React.useEffect(() => {
+    if (currentUser && !loading) {
+      navigate('/');
+    }
+  }, [currentUser, loading, navigate]);
+
+  // If still checking authentication status, show loading
+  if (loading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
+        <p>Cargando...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col items-center justify-center bg-gray-50">
