@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { getAllImages } from '@/services/imageService';
 import { saveImage } from '@/services/imageService';
+import { supabase } from '../../supabase';
 
 const Index = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -48,6 +49,17 @@ const Index = () => {
     
     try {
       console.log('Uploading image for user:', currentUser.uid);
+      
+      // Verify that we're authenticated with Supabase
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !authData.user) {
+        console.error('Authentication error with Supabase:', authError);
+        toast.error('Error de autenticación');
+        return;
+      }
+      
+      console.log('Supabase auth user:', authData.user);
       
       // Generate more varied heights for a better masonry effect
       const randomHeight = () => Math.floor(Math.random() * 600) + 200;

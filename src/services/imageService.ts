@@ -17,6 +17,20 @@ export const saveImage = async (
   try {
     console.log('Saving image with user ID:', imageData.userId);
     
+    // Make sure we're authenticated before inserting
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !authData.user) {
+      console.error('Authentication error:', authError);
+      return null;
+    }
+    
+    // Verify the auth user ID matches the passed userId
+    if (authData.user.id !== imageData.userId) {
+      console.error('User ID mismatch. Auth:', authData.user.id, 'Passed:', imageData.userId);
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('images')
       .insert([
