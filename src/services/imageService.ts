@@ -15,6 +15,8 @@ export const saveImage = async (
   }
 ): Promise<Image | null> => {
   try {
+    console.log('Saving image with user ID:', imageData.userId);
+    
     const { data, error } = await supabase
       .from('images')
       .insert([

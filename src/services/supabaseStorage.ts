@@ -8,6 +8,8 @@ export const uploadImageToStorage = async (
   userId: string
 ): Promise<string | null> => {
   try {
+    console.log('Starting upload with userId:', userId);
+    
     // Create a unique file name using UUID
     const fileExt = file.name.split('.').pop();
     const fileName = `${uuid()}.${fileExt}`;
@@ -25,6 +27,8 @@ export const uploadImageToStorage = async (
       console.error('Error uploading image:', error);
       return null;
     }
+
+    console.log('Upload successful, file path:', filePath);
 
     // Get the public URL for the uploaded image
     const { data: urlData } = supabase.storage
@@ -73,4 +77,3 @@ export const deleteImageFromStorage = async (
     return false;
   }
 };
-

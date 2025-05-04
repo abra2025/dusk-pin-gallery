@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -112,6 +113,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
     setIsUploading(true);
 
     try {
+      console.log('Starting upload process for user:', currentUser.uid);
+      
       // Upload image to Supabase Storage
       const imageUrl = await uploadImageToStorage(imageFile, currentUser.uid);
       
@@ -120,6 +123,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
         setIsUploading(false);
         return;
       }
+
+      console.log('Image uploaded successfully, URL:', imageUrl);
 
       // Pass the imageUrl to the parent component
       onUpload({

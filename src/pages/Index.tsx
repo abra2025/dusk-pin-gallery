@@ -47,6 +47,8 @@ const Index = () => {
     }
     
     try {
+      console.log('Uploading image for user:', currentUser.uid);
+      
       // Generate more varied heights for a better masonry effect
       const randomHeight = () => Math.floor(Math.random() * 600) + 200;
       
@@ -62,6 +64,8 @@ const Index = () => {
       if (newImage) {
         setImages([newImage, ...images]);
         toast.success('Imagen subida correctamente');
+      } else {
+        toast.error('Error al guardar la imagen');
       }
     } catch (error) {
       console.error('Error saving image:', error);
