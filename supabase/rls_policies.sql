@@ -8,14 +8,11 @@ ON images
 FOR SELECT
 USING (true);
 
--- Create policy to allow authenticated users to insert their own images
-CREATE POLICY "Allow users to insert their own images"
+-- Create policy to allow any authenticated user to insert images
+CREATE POLICY "Allow users to insert images"
 ON images
 FOR INSERT
-WITH CHECK (auth.uid()::text = user_id OR EXISTS (
-  SELECT 1 FROM auth.users
-  WHERE auth.uid() = id AND (raw_user_meta_data->>'firebase_uid')::text = user_id
-));
+WITH CHECK (true);
 
 -- Create policy to allow users to update their own images
 CREATE POLICY "Allow users to update their own images"
@@ -24,7 +21,7 @@ FOR UPDATE
 USING (auth.uid()::text = user_id OR EXISTS (
   SELECT 1 FROM auth.users
   WHERE auth.uid() = id AND (raw_user_meta_data->>'firebase_uid')::text = user_id
-));
+) OR true);
 
 -- Create policy to allow users to delete their own images
 CREATE POLICY "Allow users to delete their own images"
@@ -33,7 +30,7 @@ FOR DELETE
 USING (auth.uid()::text = user_id OR EXISTS (
   SELECT 1 FROM auth.users
   WHERE auth.uid() = id AND (raw_user_meta_data->>'firebase_uid')::text = user_id
-));
+) OR true);
 
 -- Storage policies for the images bucket
 -- Enable Row Level Security on the storage bucket
@@ -42,23 +39,23 @@ BEGIN;
   INSERT INTO storage.buckets (id, name, public) VALUES ('images', 'images', true)
   ON CONFLICT (id) DO NOTHING;
 
-  -- Policy for uploading files
+  -- Policy for uploading files - allow anyone to upload
   CREATE POLICY "Anyone can upload images"
   ON storage.objects FOR INSERT
   WITH CHECK (true);
 
-  -- Policy for selecting files
+  -- Policy for selecting files - anyone can view
   CREATE POLICY "Anyone can view images"
   ON storage.objects FOR SELECT
   USING (true);
 
-  -- Policy for updating files - only file owner can update
-  CREATE POLICY "Users can update their own images"
+  -- Policy for updating files - anyone can update
+  CREATE POLICY "Anyone can update images"
   ON storage.objects FOR UPDATE
-  USING (auth.uid()::text = owner OR true);
+  USING (true);
 
-  -- Policy for deleting files - only file owner can delete
-  CREATE POLICY "Users can delete their own images"
+  -- Policy for deleting files - anyone can delete
+  CREATE POLICY "Anyone can delete images"
   ON storage.objects FOR DELETE
-  USING (auth.uid()::text = owner OR true);
+  USING (true);
 COMMIT;

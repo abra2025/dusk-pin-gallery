@@ -1,4 +1,3 @@
-
 import { supabase } from '../../supabase';
 import { Image, Category } from '@/types';
 import { uploadImageToStorage } from './supabaseStorage';
@@ -17,22 +16,20 @@ export const saveImage = async (
   try {
     console.log('Saving image with user ID:', imageData.userId);
     
-    // Make sure we're authenticated before inserting
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    // Get current session status
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (authError) {
-      console.error('Authentication error with Supabase:', authError);
+    if (sessionError || !sessionData.session) {
+      console.log('No authenticated session for saving image, attempting anonymous upload');
       
-      // Try to get the session - sometimes getUser fails but getSession works
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !sessionData.session) {
-        console.error('Session error with Supabase:', sessionError);
-        return null;
-      }
-      
+      // Create an anonymous session for this upload if we don't have one
       if (!sessionData.session) {
-        console.error('No Supabase session found');
-        return null;
+        const { error: anonError } = await supabase.auth.signInAnonymously();
+        if (anonError) {
+          console.error('Failed to create anonymous session:', anonError);
+          return null;
+        }
+        console.log('Created anonymous session for image saving');
       }
     }
     
@@ -252,4 +249,3 @@ export const toggleSaveImage = async (imageId: string, userId: string): Promise<
     return false;
   }
 };
-

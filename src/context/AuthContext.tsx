@@ -31,49 +31,88 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Function to sync Firebase user with Supabase
   const syncUserWithSupabase = async (user: User | null) => {
     if (user) {
-      // Get ID token from Firebase
-      const idToken = await user.getIdToken();
-      
-      // Sign in to Supabase with custom token
-      const { error } = await supabase.auth.signInWithPassword({
-        email: user.email || 'anonymous@example.com',
-        password: idToken.substring(0, 20) // Using a portion of the ID token as password
-      });
-      
-      if (error) {
-        // If the user doesn't exist in Supabase yet, sign them up
-        if (error.message.includes('Invalid login credentials')) {
-          const { error: signUpError } = await supabase.auth.signUp({
+      try {
+        console.log('Syncing Firebase user with Supabase:', user.uid);
+        
+        // Get ID token from Firebase
+        const idToken = await user.getIdToken();
+        
+        // Sign in to Supabase with custom token - first attempt with createSession
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithIdToken({
+          provider: 'google', // We're using google as a placeholder
+          token: idToken,
+          nonce: 'firebase-' + user.uid, // Add a unique nonce
+        });
+        
+        if (signInError) {
+          console.error('Error signing in with Supabase ID token:', signInError);
+          
+          // If that fails, try email/password approach
+          const { error: emailSignInError } = await supabase.auth.signInWithPassword({
             email: user.email || 'anonymous@example.com',
-            password: idToken.substring(0, 20),
-            options: {
-              data: {
-                firebase_uid: user.uid,
-                display_name: user.displayName
-              }
-            }
+            password: idToken.substring(0, 20) // Using a portion of the ID token as password
           });
           
-          if (signUpError) {
-            console.error('Error signing up with Supabase:', signUpError);
+          if (emailSignInError) {
+            // If sign in fails, try to sign up
+            if (emailSignInError.message.includes('Invalid login credentials')) {
+              console.log('Attempting to sign up with Supabase');
+              const { error: signUpError } = await supabase.auth.signUp({
+                email: user.email || 'anonymous@example.com',
+                password: idToken.substring(0, 20),
+                options: {
+                  data: {
+                    firebase_uid: user.uid,
+                    display_name: user.displayName
+                  }
+                }
+              });
+              
+              if (signUpError) {
+                console.error('Error signing up with Supabase:', signUpError);
+                return false;
+              } else {
+                console.log('Successfully signed up with Supabase');
+                
+                // After signup, sign in again
+                await supabase.auth.signInWithPassword({
+                  email: user.email || 'anonymous@example.com',
+                  password: idToken.substring(0, 20)
+                });
+              }
+            } else {
+              console.error('Error signing in with Supabase email/password:', emailSignInError);
+              return false;
+            }
           }
         } else {
-          console.error('Error signing in with Supabase:', error);
+          console.log('Successfully signed in with Supabase ID token');
         }
+        
+        return true;
+      } catch (error) {
+        console.error('Error in syncUserWithSupabase:', error);
+        return false;
       }
     } else {
       // Sign out from Supabase when Firebase user signs out
+      console.log('Signing out from Supabase');
       await supabase.auth.signOut();
+      return true;
     }
   };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('Firebase auth state changed:', user?.uid);
       setCurrentUser(user);
       
       try {
         // Sync Firebase user with Supabase
-        await syncUserWithSupabase(user);
+        const syncResult = await syncUserWithSupabase(user);
+        if (!syncResult) {
+          console.warn('Failed to sync with Supabase');
+        }
       } catch (error) {
         console.error('Error syncing with Supabase:', error);
       } finally {
@@ -125,8 +164,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logOut = async () => {
     try {
+      // First sign out from Supabase
+      await supabase.auth.signOut();
+      // Then sign out from Firebase
       await signOut(auth);
-      // Supabase sign out is handled in the syncUserWithSupabase function
       toast.success("Sesión cerrada correctamente");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);

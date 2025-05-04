@@ -18,7 +18,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { currentUser, loading } = useAuth();
   
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className="min-h-screen bg-neutral-900 text-white flex items-center justify-center">
+      <p>Loading...</p>
+    </div>;
   }
   
   if (!currentUser) {
@@ -28,32 +30,31 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const AppRoutes = () => {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginScreen />} />
-      <Route path="/" element={
-        <ProtectedRoute>
-          <Index />
-        </ProtectedRoute>
-      } />
-      <Route path="/image/:id" element={
-        <ProtectedRoute>
-          <ImageDetail />
-        </ProtectedRoute>
-      } />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
-  );
-};
+// Separate component for routes to ensure useAuth is used within AuthProvider
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/login" element={<LoginScreen />} />
+    <Route path="/" element={
+      <ProtectedRoute>
+        <Index />
+      </ProtectedRoute>
+    } />
+    <Route path="/image/:id" element={
+      <ProtectedRoute>
+        <ImageDetail />
+      </ProtectedRoute>
+    } />
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AuthProvider>
-        <Sonner theme="dark" position="top-center" />
-        <Toaster />
         <BrowserRouter>
+          <Sonner theme="dark" position="top-center" />
+          <Toaster />
           <AppRoutes />
         </BrowserRouter>
       </AuthProvider>

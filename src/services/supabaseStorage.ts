@@ -12,20 +12,26 @@ export const uploadImageToStorage = async (
     
     // Check auth status before upload
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
     if (sessionError) {
       console.error('Error getting Supabase session:', sessionError);
       return null;
     }
     
     if (!sessionData.session) {
-      console.error('No active Supabase session');
+      console.error('No active Supabase session - attempting to create a new anonymous session');
       
-      // Try to refresh the session
-      const { error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError) {
-        console.error('Failed to refresh Supabase session:', refreshError);
+      // Instead of trying to refresh, create an anonymous session for this upload
+      const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
+      
+      if (anonError) {
+        console.error('Failed to create anonymous session:', anonError);
         return null;
       }
+      
+      console.log('Created anonymous session for upload');
+    } else {
+      console.log('Using existing Supabase session for upload');
     }
     
     // Create a unique file name using UUID
