@@ -10,6 +10,24 @@ export const uploadImageToStorage = async (
   try {
     console.log('Starting upload with userId:', userId);
     
+    // Check auth status before upload
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      console.error('Error getting Supabase session:', sessionError);
+      return null;
+    }
+    
+    if (!sessionData.session) {
+      console.error('No active Supabase session');
+      
+      // Try to refresh the session
+      const { error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.error('Failed to refresh Supabase session:', refreshError);
+        return null;
+      }
+    }
+    
     // Create a unique file name using UUID
     const fileExt = file.name.split('.').pop();
     const fileName = `${uuid()}.${fileExt}`;

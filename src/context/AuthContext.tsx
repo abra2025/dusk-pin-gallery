@@ -11,6 +11,7 @@ import {
 } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebase";
 import { toast } from "sonner";
+import { supabase } from "../../supabase";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -27,10 +28,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Function to sync Firebase user with Supabase
+  const syncUserWithSupabase = async (user: User | null) => {
+    if (user) {
+      // Get ID token from Firebase
+      const idToken = await user.getIdToken();
+      
+      // Sign in to Supabase with custom token
+      const { error } = await supabase.auth.signInWithPassword({
+        email: user.email || 'anonymous@example.com',
+        password: idToken.substring(0, 20) // Using a portion of the ID token as password
+      });
+      
+      if (error) {
+        // If the user doesn't exist in Supabase yet, sign them up
+        if (error.message.includes('Invalid login credentials')) {
+          const { error: signUpError } = await supabase.auth.signUp({
+            email: user.email || 'anonymous@example.com',
+            password: idToken.substring(0, 20),
+            options: {
+              data: {
+                firebase_uid: user.uid,
+                display_name: user.displayName
+              }
+            }
+          });
+          
+          if (signUpError) {
+            console.error('Error signing up with Supabase:', signUpError);
+          }
+        } else {
+          console.error('Error signing in with Supabase:', error);
+        }
+      }
+    } else {
+      // Sign out from Supabase when Firebase user signs out
+      await supabase.auth.signOut();
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-      setLoading(false);
+      
+      try {
+        // Sync Firebase user with Supabase
+        await syncUserWithSupabase(user);
+      } catch (error) {
+        console.error('Error syncing with Supabase:', error);
+      } finally {
+        setLoading(false);
+      }
     });
 
     return unsubscribe;
@@ -38,8 +86,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithGoogle = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
       toast.success("¡Inicio de sesión exitoso!");
+      
+      // Sync with Supabase after successful sign in
+      await syncUserWithSupabase(result.user);
     } catch (error) {
       console.error("Error al iniciar sesión con Google:", error);
       toast.error("Error al iniciar sesión. Inténtalo de nuevo.");
@@ -48,8 +99,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, email, password);
       toast.success("¡Inicio de sesión exitoso!");
+      
+      // Sync with Supabase after successful sign in
+      await syncUserWithSupabase(result.user);
     } catch (error) {
       console.error("Error al iniciar sesión con email:", error);
       toast.error("Error al iniciar sesión. Inténtalo de nuevo.");
@@ -58,8 +112,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUpWithEmail = async (email: string, password: string) => {
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const result = await createUserWithEmailAndPassword(auth, email, password);
       toast.success("¡Cuenta creada exitosamente!");
+      
+      // Sync with Supabase after successful sign up
+      await syncUserWithSupabase(result.user);
     } catch (error) {
       console.error("Error al crear cuenta:", error);
       toast.error("Error al crear cuenta. Inténtalo de nuevo.");
@@ -69,6 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logOut = async () => {
     try {
       await signOut(auth);
+      // Supabase sign out is handled in the syncUserWithSupabase function
       toast.success("Sesión cerrada correctamente");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
