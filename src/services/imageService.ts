@@ -1,6 +1,8 @@
+
 import { supabase } from '../../supabase';
 import { Image, Category } from '@/types';
 import { uploadImageToStorage } from './supabaseStorage';
+import { toast } from 'sonner';
 
 // Save image metadata to Supabase database
 export const saveImage = async (
@@ -15,25 +17,9 @@ export const saveImage = async (
 ): Promise<Image | null> => {
   try {
     console.log('Saving image with user ID:', imageData.userId);
-    
-    // Get current session status
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError || !sessionData.session) {
-      console.log('No authenticated session for saving image, attempting anonymous upload');
-      
-      // Create an anonymous session for this upload if we don't have one
-      if (!sessionData.session) {
-        const { error: anonError } = await supabase.auth.signInAnonymously();
-        if (anonError) {
-          console.error('Failed to create anonymous session:', anonError);
-          return null;
-        }
-        console.log('Created anonymous session for image saving');
-      }
-    }
-    
-    // Insert the image data
+
+    // Insert the image data directly without checking session
+    // This will rely on RLS policies for security
     const { data, error } = await supabase
       .from('images')
       .insert([
@@ -76,10 +62,22 @@ export const saveImage = async (
 // Get all images
 export const getAllImages = async (): Promise<Image[]> => {
   try {
-    const { data, error } = await supabase
+    // Set a timeout for the request to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Request timed out')), 10000);
+    });
+    
+    // Actual request
+    const requestPromise = supabase
       .from('images')
       .select('*')
       .order('created_at', { ascending: false });
+    
+    // Race between timeout and actual request
+    const { data, error } = await Promise.race([
+      requestPromise,
+      timeoutPromise
+    ]) as any;
 
     if (error) {
       console.error('Error fetching images:', error);
@@ -101,6 +99,7 @@ export const getAllImages = async (): Promise<Image[]> => {
     return images;
   } catch (error) {
     console.error('Error in getAllImages:', error);
+    toast.error('Error al cargar las imágenes. Intente de nuevo más tarde.');
     return [];
   }
 };

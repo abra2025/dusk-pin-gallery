@@ -8,8 +8,8 @@ ON images
 FOR SELECT
 USING (true);
 
--- Create policy to allow any authenticated user to insert images
-CREATE POLICY "Allow users to insert images"
+-- Create policy to allow any user to insert images
+CREATE POLICY "Allow anyone to insert images"
 ON images
 FOR INSERT
 WITH CHECK (true);

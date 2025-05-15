@@ -1,6 +1,7 @@
 
 import { supabase } from '../../supabase';
 import { v4 as uuid } from 'uuid';
+import { toast } from 'sonner';
 
 // Upload an image to Supabase Storage
 export const uploadImageToStorage = async (
@@ -10,56 +11,73 @@ export const uploadImageToStorage = async (
   try {
     console.log('Starting upload with userId:', userId);
     
-    // Check auth status before upload
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError) {
-      console.error('Error getting Supabase session:', sessionError);
-      return null;
-    }
-    
-    if (!sessionData.session) {
-      console.error('No active Supabase session - attempting to create a new anonymous session');
-      
-      // Instead of trying to refresh, create an anonymous session for this upload
-      const { data: anonData, error: anonError } = await supabase.auth.signInAnonymously();
-      
-      if (anonError) {
-        console.error('Failed to create anonymous session:', anonError);
-        return null;
-      }
-      
-      console.log('Created anonymous session for upload');
-    } else {
-      console.log('Using existing Supabase session for upload');
-    }
-    
     // Create a unique file name using UUID
     const fileExt = file.name.split('.').pop();
     const fileName = `${uuid()}.${fileExt}`;
     const filePath = `${userId}/${fileName}`;
-
-    // Upload the file to the "images" bucket in Supabase Storage
-    const { data, error } = await supabase.storage
-      .from('images')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (error) {
-      console.error('Error uploading image:', error);
+    
+    // Maximum retries for upload
+    const maxRetries = 3;
+    let retryCount = 0;
+    let uploadSuccess = false;
+    let error = null;
+    
+    // Try to upload with retries
+    while (retryCount < maxRetries && !uploadSuccess) {
+      try {
+        console.log(`Upload attempt ${retryCount + 1} of ${maxRetries}`);
+        
+        // Upload the file to the "images" bucket in Supabase Storage
+        const { data, error: uploadError } = await supabase.storage
+          .from('images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+          
+        if (uploadError) {
+          error = uploadError;
+          console.log(`Upload attempt ${retryCount + 1} failed:`, uploadError);
+          retryCount++;
+          
+          // Wait before retrying (exponential backoff)
+          if (retryCount < maxRetries) {
+            const delay = Math.pow(2, retryCount) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        } else {
+          uploadSuccess = true;
+          console.log('Upload successful, file path:', filePath);
+          
+          // Get the public URL for the uploaded image
+          const { data: urlData } = supabase.storage
+            .from('images')
+            .getPublicUrl(filePath);
+            
+          return urlData.publicUrl;
+        }
+      } catch (err) {
+        error = err;
+        console.log(`Upload attempt ${retryCount + 1} failed with exception:`, err);
+        retryCount++;
+        
+        // Wait before retrying
+        if (retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    // If we've exhausted retries, try a fallback mechanism
+    if (!uploadSuccess) {
+      console.error('All upload attempts failed:', error);
+      toast.error('No se pudo conectar con el servidor de almacenamiento. Por favor, inténtalo de nuevo más tarde.');
       return null;
     }
-
-    console.log('Upload successful, file path:', filePath);
-
-    // Get the public URL for the uploaded image
-    const { data: urlData } = supabase.storage
-      .from('images')
-      .getPublicUrl(filePath);
-
-    return urlData.publicUrl;
+    
+    // This should not be reached if all attempts fail
+    return null;
   } catch (error) {
     console.error('Error in uploadImageToStorage:', error);
     return null;
