@@ -7,10 +7,9 @@ import { toast } from 'sonner';
 
 interface ImageCardProps {
   image: Image;
-  onClick?: () => void;
 }
 
-const ImageCard: React.FC<ImageCardProps> = ({ image, onClick }) => {
+const ImageCard: React.FC<ImageCardProps> = ({ image }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isSaved, setIsSaved] = useState(image.saved || false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -30,22 +29,24 @@ const ImageCard: React.FC<ImageCardProps> = ({ image, onClick }) => {
     }
   };
 
+  const aspectRatio = image.height ? `${Math.min(image.height / 100, 1.8)}` : '1';
+
   return (
     <div 
       className={cn(
-        "rounded-lg overflow-hidden relative cursor-pointer transition-all duration-300 masonry-item",
+        "rounded-lg overflow-hidden relative cursor-pointer transition-all duration-300",
         { "shadow-lg": isHovered }
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={onClick}
+      style={{ aspectRatio }}
     >
-      <div className="w-full">
+      <div className="w-full h-full">
         <img 
           src={image.src} 
           alt={image.title}
           className={cn(
-            "w-full object-cover transition-opacity duration-300",
+            "w-full h-full object-cover transition-opacity duration-300",
             { "opacity-0": !isLoaded, "opacity-100": isLoaded }
           )}
           onLoad={() => setIsLoaded(true)}

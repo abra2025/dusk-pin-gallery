@@ -1,92 +1,46 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import Header from '@/components/Header';
 import MasonryGrid from '@/components/MasonryGrid';
 import UploadModal from '@/components/UploadModal';
 import { Image, Category } from '@/types';
+import { v4 as uuid } from 'uuid';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
-import { getAllImages } from '@/services/imageService';
-import { saveImage } from '@/services/imageService';
-import { supabase } from '../../supabase';
 
 const Index = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [images, setImages] = useState<Image[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { currentUser } = useAuth();
-  const navigate = useNavigate();
+  const [images, setImages] = useState<Image[]>([]); // Start with empty array instead of sample images
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      setLoading(true);
-      try {
-        const fetchedImages = await getAllImages();
-        setImages(fetchedImages);
-      } catch (error) {
-        console.error('Error fetching images:', error);
-        toast.error('Error al cargar las imágenes');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchImages();
-  }, []);
-
-  const handleUploadImage = async (data: {
+  const handleUploadImage = (data: {
     title: string;
     description: string;
     categories: Category[];
-    imageUrl: string;
-    userId: string;
+    imageFile: File | null;
   }) => {
-    if (!currentUser) {
-      toast.error('Debes iniciar sesión para subir imágenes');
-      return;
-    }
-    
-    try {
-      console.log('Uploading image for user:', currentUser.uid);
-      
-      // Verify that we're authenticated with Supabase
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !authData.user) {
-        console.error('Authentication error with Supabase:', authError);
-        toast.error('Error de autenticación');
-        return;
-      }
-      
-      console.log('Supabase auth user:', authData.user);
+    if (data.imageFile) {
+      // En una app real, aquí subiríamos la imagen a un servidor
+      // Por ahora, usaremos URL.createObjectURL para simular
+      const imageUrl = URL.createObjectURL(data.imageFile);
       
       // Generate more varied heights for a better masonry effect
-      const randomHeight = () => Math.floor(Math.random() * 600) + 200;
+      const randomHeight = () => {
+        // Create more varied heights between 200 and 800px
+        return Math.floor(Math.random() * 600) + 200;
+      };
       
-      const newImage = await saveImage({
+      const newImage: Image = {
+        id: uuid(),
+        src: imageUrl,
         title: data.title,
         description: data.description,
         categories: data.categories,
-        imageUrl: data.imageUrl,
-        userId: data.userId,
+        saved: false,
         height: randomHeight(),
-      });
+      };
       
-      if (newImage) {
-        setImages([newImage, ...images]);
-        toast.success('Imagen subida correctamente');
-      } else {
-        toast.error('Error al guardar la imagen');
-      }
-    } catch (error) {
-      console.error('Error saving image:', error);
-      toast.error('Error al guardar la imagen');
+      setImages([newImage, ...images]);
+      toast.success('Imagen subida correctamente');
     }
-  };
-
-  const handleImageClick = (imageId: string) => {
-    navigate(`/image/${imageId}`);
   };
 
   return (
@@ -94,11 +48,7 @@ const Index = () => {
       <Header onUploadClick={() => setIsUploadModalOpen(true)} />
       
       <main className="max-w-7xl mx-auto px-4 py-6">
-        <MasonryGrid 
-          images={images} 
-          loading={loading} 
-          onImageClick={handleImageClick}
-        />
+        <MasonryGrid images={images} />
       </main>
       
       <UploadModal 

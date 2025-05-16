@@ -6,11 +6,7 @@ export interface Image {
   description?: string;
   categories: string[];
   saved?: boolean;
-  liked?: boolean;
   height?: number;
-  userId?: string;
-  username?: string;
-  userAvatar?: string;
 }
 
 export type Category = 
@@ -22,4 +18,3 @@ export type Category =
   | 'croquis'
   | 'minimalismo'
   | 'industrial';
-

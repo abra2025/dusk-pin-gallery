@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -10,8 +10,6 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Upload, X, Image as ImageIcon } from "lucide-react";
 import { Category } from '../types';
 import { toast } from 'sonner';
-import { uploadImageToStorage } from '@/services/supabaseStorage';
-import { useAuth } from '@/context/AuthContext';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -20,8 +18,7 @@ interface UploadModalProps {
     title: string;
     description: string;
     categories: Category[];
-    imageUrl: string;
-    userId: string;
+    imageFile: File | null;
   }) => void;
 }
 
@@ -43,9 +40,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const { currentUser } = useAuth();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -94,35 +88,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
       setSelectedCategories([...selectedCategories, category]);
     }
   };
-  
-  useEffect(() => {
-    // Reset form when modal is opened
-    if (isOpen) {
-      setTitle('');
-      setDescription('');
-      setSelectedCategories([]);
-      setImageFile(null);
-      setPreviewUrl(null);
-      setUploadProgress(0);
-    }
-  }, [isOpen]);
 
-  const simulateProgress = () => {
-    // Simulate upload progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      if (progress >= 90) {
-        clearInterval(interval);
-      } else {
-        setUploadProgress(progress);
-      }
-    }, 200);
-    
-    return () => clearInterval(interval);
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!title.trim()) {
       toast.error('El título es obligatorio');
       return;
@@ -133,51 +100,21 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
       return;
     }
 
-    if (!currentUser) {
-      toast.error('Debes iniciar sesión para subir imágenes');
-      return;
-    }
+    onUpload({
+      title,
+      description,
+      categories: selectedCategories,
+      imageFile,
+    });
 
-    setIsUploading(true);
+    // Reset form
+    setTitle('');
+    setDescription('');
+    setSelectedCategories([]);
+    setImageFile(null);
+    setPreviewUrl(null);
     
-    // Start progress simulation
-    const stopProgress = simulateProgress();
-
-    try {
-      console.log('Starting upload process for user:', currentUser.uid);
-      
-      // Upload image to Supabase Storage
-      const imageUrl = await uploadImageToStorage(imageFile, currentUser.uid);
-      
-      // Complete progress
-      setUploadProgress(100);
-      
-      if (!imageUrl) {
-        toast.error('Error al subir la imagen');
-        setIsUploading(false);
-        stopProgress();
-        return;
-      }
-
-      console.log('Image uploaded successfully, URL:', imageUrl);
-
-      // Pass the imageUrl to the parent component
-      onUpload({
-        title,
-        description,
-        categories: selectedCategories,
-        imageUrl,
-        userId: currentUser.uid,
-      });
-
-      // Modal will be closed by parent component
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error('Error al subir la imagen');
-    } finally {
-      stopProgress();
-      setIsUploading(false);
-    }
+    onClose();
   };
 
   return (
@@ -287,18 +224,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
               ))}
             </div>
           </div>
-          
-          {isUploading && (
-            <div className="w-full bg-neutral-700 rounded-full h-2.5 mt-4">
-              <div 
-                className="bg-white h-2.5 rounded-full transition-all duration-300" 
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
-              <p className="text-xs text-right text-neutral-400 mt-1">
-                {uploadProgress}%
-              </p>
-            </div>
-          )}
         </div>
         
         <DialogFooter className="sm:justify-end">
@@ -306,7 +231,6 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
             variant="outline"
             onClick={onClose}
             className="bg-transparent border-neutral-600 text-neutral-300 hover:bg-neutral-700"
-            disabled={isUploading}
           >
             Cancelar
           </Button>
@@ -314,9 +238,8 @@ const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onUpload }) 
             type="submit"
             className="bg-white text-black hover:bg-neutral-200"
             onClick={handleSubmit}
-            disabled={isUploading}
           >
-            {isUploading ? 'Subiendo...' : 'Subir'}
+            Subir
           </Button>
         </DialogFooter>
       </DialogContent>

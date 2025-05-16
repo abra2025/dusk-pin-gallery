@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -76,6 +75,19 @@
 }
 
 /* Masonry Grid Styles */
+.masonry-grid {
+  display: flex;
+  width: 100%;
+  gap: 16px;
+}
+
+.masonry-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 16px;
+}
+
 .masonry-item {
   width: 100%;
   display: block;
